@@ -1,0 +1,27 @@
+#Ignore the following files 
+
+*.Pipfile
+*.lock
+*.JPG
+*.png
+*.txt
+*.mp4
+*~
+*.pyc
+
+# LaTeX
+*-blx.bib
+*.log
+*.bbl
+*.blg
+*.aux
+*.out
+*.xml
+*.toc
+*.synctex.gz
+*.bak
+*.pdf
+__pycache__
+
+# Exceptions
+
