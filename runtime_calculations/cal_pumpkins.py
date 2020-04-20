@@ -11,17 +11,16 @@ rank = comm.Get_rank()
 p = comm.Get_size()
 
 #Get number of blocks 
-instance.read_blocks_from_file("partitions.txt")
+instance.read_blocks_from_file("output/blocks.txt")
 n = len(instance.list_of_blocks)
 
 #Get number of local blocks to calculate 
 local_n = n/p
 
-#Find interval for each process
+#Find interval for each process based on rank
 interval = []
 interval.append(rank*local_n)
 
-#Split blocks into local blocks based on rank
 if rank == (p-1):
     interval.append(rank*local_n + local_n + (n - rank*local_n - local_n))
 else:

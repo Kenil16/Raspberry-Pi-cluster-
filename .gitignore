@@ -2,9 +2,9 @@
 
 *.Pipfile
 *.lock
-*.JPG
-*.png
-*.txt
+!*.JPG
+!*.png
+!*.txt
 *.mp4
 *~
 *.pyc

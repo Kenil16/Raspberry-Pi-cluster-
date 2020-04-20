@@ -59,6 +59,7 @@ The NFS server is installed on the master node using \textbf{sudo apt install nf
 Now the NFS client must be installed on the slave nodes which is done using the command \textbf{sudo apt install nfs-common}. Then a shared folder can be made using \textbf{sudo mkdir /clusterfs} with owner and permissions changed using \textbf{sudo chown nobody.nogroup} \textbf{/clusterfs} and \textbf{sudo chmod -R 777 /clusterfs}. To make the NFS share to mount automtically when nodes boot, the /etc/fstab file should be changed with the line \textit{(10.42.0.10:/home/pi/clusterfs /home/pi/clusterfs nfs defaults 0 0)}. This sets the file system, mount point, type, options, dump and pass. \cite{NFS}
 
 \section{Slurm}
+\label{sec:slurm}
 
 Simple Linux Utility for Resource Management (SLURM) is an open source highly scalable cluster management and job scheduling system for large and small Linux clusters. It can allocate access to resources for users for a duration of time so they can perform work. Moreover, it provides framework for starting , executing and monitoring work on allocated nodes along with an arbitration contention for resources by managing a queue of pending work. Hence this software is chosen for management of the Raspberry Pi cluster. Fore more information visit \cite{SLURM}. 
 
@@ -83,12 +84,15 @@ Now on all the compute notes the slurmd and slurm-client must be installed using
 
 \section{Big data processing}
 
-OpenMPI is an open source message passing interface which enables a single script to run a job spread across multiple nodes in the cluster. To use OpenMPI, the following must be installed on every node \textbf{sudo apt install openmpi-bin openmpi-common libopenmpi3 libopenmpi-dev}.
+OpenMPI is an open source message passing interface which enables a single script to run a job spread across multiple nodes in the cluster. To use OpenMPI, the following must be installed on every node \textbf{sudo apt install openmpi-bin openmpi-common libopenmpi3 libopenmpi-dev}. 
 
-Because the most time consuming operation in the cluster is the communication and sharing of data between nodes, two programs will be tested. A program of computing an integral running locally on each node will performed. Moreover, a program for counting pumpkins in a field where sharing of the data will happen from the USB of the master will also be utilized.    
+The approach to achieve parallelism is build upon a technique called SPMD (single program, multiple data), where tasks are split up and run simultaneously on multiple processors. This means that all available processors in the cluster will be given a clone of the program to execute. An example is the \textit{Do loop}, where different processors will work on separate parts of the arrays involved in the loop. This is exactly the method which will be used in this section to achieve parallelism.\cite{SPMD}    
+
+Because the most time consuming operation in the cluster will be the communication and sharing of data between nodes, two programs will be tested. A program of computing an integral running locally on each node will performed. Moreover, a program for counting pumpkins in a field where sharing of the data will happen from the USB of the master will also be utilized. The outcome of this will give an indication of the performance of the cluster compared to that of a laptop.     
+
+The code created for distributing the work of counting pumpkins to multiple processors in the cluster can be seen in Figure \ref{fig:cal_pumpkins.py}. Here the module \textit{mpi4py} is used for python. In line 9-11, MPI is initialized  by making a communication object for which data can be send between nodes. The \textit{rank} will be the specific index of each process and \textit{p} is the number of wanted processes. \textit{p} does not have to be the number of available cores in the system. However, to achieve parallelism, this must be the case. In the line 14-28, the blocks are read into memory and split up into minor chunks in regard to the number of processes to run. This will effectively make arrays with a specific interval of blocks to analyze for pumpkins in the orthomosaic seen in Figure \ref{fig:orthomosaic}. When a process finishes, its result will be collected through the communication object with there results summed up to a total summation of all found pumpkins.        
 
 \definecolor{backcolour}{rgb}{0.95,0.95,0.92}
-
 \lstset{ 
 backgroundcolor=\color{white},
 frame=none,
@@ -110,8 +114,49 @@ backgroundcolor=\color{backcolour}
 \lstinputlisting[language=bash]{../../runtime_calculations/sub_mpi_pumpkins.sh}
 \end{minipage}
 \caption{The code in the script sub\_mpi\_pumpkins.sh for parallel processing using OpenMPI and SLURM}
-\label{fig:cal_pumpkins.py}
+\label{fig:sub_mpi_pumpkins.sh}
 \end{figure}
+
+When using SLURM, a number of commands can be used to distribute jobs to nodes in the cluster. The \textit{sbatch} command submits batch jobs to SLURM. This can either be accomplished by entering this command with specific parameters from the terminal or from a batch script. In Figure \ref{fig:sub_mpi_pumpkins.sh}, the batch script used to test the execution time of the detection of pumpkins, which utilizes OpenMPI, can be seen. Here the number of tasks are set to the number of available cores in the cluster, which was given to the slurm.conf file in Section \ref{sec:slurm}. Then the script are set to be launched from the current directory. However, it may be necessary to include the line \textit{(sys.path.append(os.getcwd()))} from the modules \textit{os} and \textit{sys} in the top of the execution files in python, because SLURM is launched from a different directory than that of the placement of the files to import. Now the run time of counting pumpkins will be evaluated using one to twelve cores. This will be compared to that of a laptop having an Intel Core M-5Y10c CPU 0.80GHz $\times $ 4 with 8 GB RAM. The result of this can be seen in Figure \ref{fig:counting_pumpkins}. 
+
+\begin{figure}[H]
+\centering
+  \begin{subfigure}[b]{0.48\textwidth}
+  \centering
+    \includegraphics[height=6cm]{../Figures/runtime_counting_pumpkins1.png}
+    \caption{Runtime of an integral with 1 million steps}
+    \label{fig:counting_pumpkins_plot}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[b]{0.48\textwidth}
+  \centering
+    \includegraphics[height=6cm]{../Figures/barchart_pumpkin_runtime.png}
+    \caption{Runtime of an integral with 10 million steps}
+    \label{fig:counting_pumpkins_barchart}
+  \end{subfigure}
+  \caption{The performance of a compute cluster in regard to a laptop}
+  \label{fig:counting_pumpkins}
+\end{figure}  
+
+\begin{figure}[H]
+	\centering
+	\captionsetup{justification=centering}
+	\includegraphics[height=7cm]{../Figures/orthomosaic.png}
+    \caption{Illustration of the field in which pumpkins must be found. This is an orthomosaic made by the program Metashape from Agisoft}
+    \label{fig:orthomosaic}
+\end{figure}
+
+It may be noticed that the biggest gain of using a multicore system is going from 1 to 2-4 cores. The reason for this being that when the number of cores increases, the inter-machine communication increases, while the amount of compute work per core decreases \cite{multicore_system}. As mentioned earlier, the orthomosaic image is located on the master where the nodes share data. This means that the throughput is reduced significantly as all the nodes must get the blocks of the orthomosaic when they each have found the pumpkins in a block of the image. One could have placed the othomosaic in the local memory of each node. This would have increased the performance as the nodes would only have to communicate in the beginning and end of delivering the final results. This is always a trade off of using extra memory to achieve higher speed.          
+
+\begin{figure}[H]
+	\centering
+	\captionsetup{justification=centering}
+	\includegraphics[height=17cm]{../Figures/big_data_handling.png}
+    \caption{Illustration of the working of the pumpkin counting algorithm. The colors shows pumpkins detected in each block with an overlap to insure that pumpkins are only counted ones for each block}
+    \label{fig:created_files}
+\end{figure}
+
+To see the performance of the cluster when the nodes are not sharing big amount of data from the master, an integral calculation was performed for the function $f(x) = x^2$. Here the trapezoidal rule with end points $a=0$ and $b=1$ will be used. Giving the number of steps ($n$) to the function, an estimation of the integral can be found. As in the case of counting pumpkins, a \textit{cal\_intergral.py} and \textit{sub\_mpi\_integral.sh} have been created for the execution. Here each process will still get a clone of the program using OpenMPI and SLURM, but each process does not have to fetch data from the shared directory on the master. The performance of the Raspberry Pi cluster in regard to the laptop can be seen in Figure \ref{fig:integral_runtime_1_10mio} and \ref{fig:integral_runtime_50_mio_barchart}.    
 
 \begin{figure}[H]
 \centering
@@ -129,6 +174,7 @@ backgroundcolor=\color{backcolour}
     \label{fig:integral_runtime_10mio}
   \end{subfigure}
   \caption{The performance of a compute cluster in regard to a laptop}
+  \label{fig:integral_runtime_1_10mio}
 \end{figure}
 
 \begin{figure}[H]
@@ -148,43 +194,25 @@ backgroundcolor=\color{backcolour}
     \label{fig:extra_runtime_cluster}
   \end{subfigure}
   \caption{The performance of a compute cluster in regard to a laptop and the extra run time for the compute cluster summarized in a bar chart}
+  \label{fig:integral_runtime_50_mio_barchart}
 \end{figure}
 
-\begin{figure}[H]
-	\centering
-	\captionsetup{justification=centering}
-	\includegraphics[height=7cm]{../Figures/orthomosaic.png}
-    \caption{Illustration of the field in which pumpkins must be found. This is an orthomosaic made by the program Metashape from Agisoft}
-    \label{fig:created_files}
-\end{figure}
+As seen Figure \ref{fig:integral_runtime_1mio}, when the amount of calculations for each node are low, a bad throughput will be achieved because of the bottleneck of communication between nodes in the cluster. However, when the amount of calculations for each node increases, the bottleneck will no longer be the communication and transportation of data between nodes, but the actual calculation of data. This will decrease the overall run time and exploit the multiple cores in the cluster more effectively. This can be seen in Figure \ref{fig:integral_runtime_50mio} and highlighted in Figure \ref{fig:extra_runtime_cluster}. Hence, when doing parallel programming, it is critical the avoid transportation of data as much as possible if this is the main reason for an increase in overall run time. 
 
-\begin{figure}[H]
-	\centering
-	\captionsetup{justification=centering}
-	\includegraphics[height=17cm]{../Figures/big_data_handling.png}
-    \caption{Illustration of the working of the pumpkin counting algorithm. The colors shows pumpkins detected in each block with an overlap to insure that pumpkins are only counted ones for each block}
-    \label{fig:created_files}
-\end{figure}
+The results of the tests in the section are only an estimate, because background processes running on the laptop and Raspberry Pis could increase the run time by several milliseconds. However, multiple runs where made and they all yielded similar results. Thus, this gives an indication of the performance of the cluster which actually performs pretty well compared to that of a laptop. 
 
-\begin{figure}[H]
-\centering
-  \begin{subfigure}[b]{0.48\textwidth}
-  \centering
-    \includegraphics[height=6cm]{../Figures/runtime_counting_pumpkins1.png}
-    \caption{Runtime of an integral with 1 million steps}
-    \label{fig:integral_runtime_1mio}
-  \end{subfigure}
-  \hfill
-  \begin{subfigure}[b]{0.48\textwidth}
-  \centering
-    \includegraphics[height=6cm]{../Figures/barchart_pumpkin_runtime.png}
-    \caption{Runtime of an integral with 10 million steps}
-    \label{fig:integral_runtime_10mio}
-  \end{subfigure}
-  \caption{The performance of a compute cluster in regard to a laptop}
-\end{figure}
-
+Only the scripts \textit{cal\_pumpkins.py} and \textit{sub\_mpi\_pumpkins.sh} were briefly explained in this section. If one wants to have a closer look at the programming of the big data handling procedure and the code for counting pumpkins, it can be seen on GitHub \cite{kenni_github}. 
+ 
 \section{Discussion}
+One of the main reasons for making a shared directory on the master node, was to enable the easy access of data between the nodes. That was quite beneficial when running large programs except for the increase in run time because of the large data transportation between nodes. Having a faster switch (Gigabit) would undoubtedly result in a decrease in run time (the switch used has 10/100 Mbps throughput).  
+
+Also the shared directory could be used to update the cluster with new nodes. Here a script could be created which would update the \textit{slurm.conf} and \textit{hosts} files at every startup. This bash script would have to be placed in the file \textit{.bashrc} located in the home folder on the Raspberry Pi. This would effectively update the cluster with new nodes and avalible processing cores at startup. Besides of this, a script for installation of all files regarding SLURM, OpenMPI, Networking and NFS could be utilized with a setup of the change of hostname and password for a new Raspberry Pi could be done, so that the process adding a new node to the cluster could be fully automated. In this project, the installations have primarily been done using the SLURM command \textit{srun} where all modules have been installed on each node in the cluster. Because only four nodes were used, this was not the big deal, but is does not scale to a cluster with many nodes. Therefore an automation of this would be desirable.  
+
+ 
+
+   
+
+
 \section{Conclusion}
 
 
