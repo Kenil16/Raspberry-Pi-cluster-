@@ -208,12 +208,12 @@ One of the main reasons for making a shared directory on the master node, was to
 
 Also the shared directory could be used to update the cluster with new nodes. Here a script could be created which would update the \textit{slurm.conf} and \textit{hosts} files at every startup. This bash script would have to be placed in the file \textit{.bashrc} located in the home folder on the Raspberry Pi. This would effectively update the cluster with new nodes and avalible processing cores at startup. Besides of this, a script for installation of all files regarding SLURM, OpenMPI, Networking and NFS could be utilized with a setup of the change of hostname and password for a new Raspberry Pi could be done, so that the process adding a new node to the cluster could be fully automated. In this project, the installations have primarily been done using the SLURM command \textit{srun} where all modules have been installed on each node in the cluster. Because only four nodes were used, this was not the big deal, but is does not scale to a cluster with many nodes. Therefore an automation of this would be desirable.  
 
- 
-
-   
-
+The automation could have been effectively accomplished using packer. Packer is a tool which lets you make changes to an OS. Packer makes use of \textit{provisioners} with two types, namely \textit{shell} and \textit{inline}. Using \textit{shell}, commands could have been written in a bash script, like adding packages or editing system configurations like Network configurations, host name, hosts, password and more. These changes would then be incorporated in the image after build. Having knowledge about current number of nodes in the cluster, a specific image with an individual setup for each node could have been made, which would made maintenance of the cluster scalable \cite{packer}.      
 
 \section{Conclusion}
+Tests showed that the run time of the calculations of counting pumpkins for a $23890 \times 6009$ image split into 742 blocks, which was run on a cluster with 12 cores, was approximately 110 seconds. A laptop with an Intel Core M-5Y10c CPU 0.80GHz $\times $ 4 with 8 GB RAM completed this in approximately 50 seconds. Because the nodes shared memory (the image) from the master, a bottleneck would be the transportation and communication over the bridge network. However, the calculations of an integral, $f(x) = x^2$, using the trapezoidal rule with end points $a=0$, $b=1$ and steps of 50 millions split into blocks to be used in parallel processing in the cluster, yielded a run time of only 0.2 seconds more than that of the laptop. This concludes that the  Raspberry Pi cluster with 12 compute cores performs pretty well, when transportation of large amounts of data between the nodes is not needed. 
+
+Hence, a Raspberry Pi cluster could be a good and cheap solution if parallel programming is possible for the given task.  
 
 
 
