@@ -1,7 +1,7 @@
 \documentclass[../Head/Report.tex]{subfiles}
 \begin{document}
 \section{Introduction}
-When processing big amount of data or jobs for which a large amount of resources are required, never computers often tend to be a pretty expensive solution. If the job does not have to be computed on a single unit, a distribution of the workload on multiple entities could be a possibility. If one got access to a supercomputer or another campus where multiple machines are accessible, this could effectively solve your problem. Hence, if parallelism is possible for the given task, a cluster of nodes could be used to decrease the run time of the calculations.  
+When processing big amount of data or jobs for which a large amount of resources are required, newer computers often tend to be a pretty expensive solution. If the job does not have to be computed on a single unit, a distribution of the workload on multiple entities could be a possibility. If one got access to a supercomputer or another campus where multiple machines are accessible, this could effectively solve your problem. Hence, if parallelism is possible for the given task, a cluster of nodes could be used to decrease the run time of the calculations.  
 
 This project presents a way to build a Raspberry Pi cluster where parallel computing of big data will be distributed to multiple nodes using SLURM. The compute nodes will share data on the master node by building a network file system (NFS). The computation of data will then be distributed to the compute nodes using OpenMPI where the code is written in python. The time for which the data has been processed and completed will be compared to that of a regular computer to see how fast a Pi cluster is able to compute big amount of data.
 
@@ -9,27 +9,28 @@ Four Raspberry Pi 2 will be used in the cluster. This Raspberry Pi can be seen i
 
 \begin{figure}[H]
 \centering
-  \begin{subfigure}[b]{0.48\textwidth}
+  \begin{subfigure}[b]{0.59\textwidth}
   \centering
-    \includegraphics[height=5cm]{../Figures/raspberry_pi.png}
-    \caption{Raspberry Pi 2}
-    \label{fig:raspberry_pi}
-  \end{subfigure}
-  \hfill
-  \begin{subfigure}[b]{0.48\textwidth}
-  \centering
-    \includegraphics[height=5cm]{../Figures/cluster.jpg}
-    \caption{The cluster, network switch and USB power hub}
+    \includegraphics[height=4cm]{../Figures/cluster.png}
+    \caption{Raspberry Pi cluster}
     \label{fig:cluster}
   \end{subfigure}
-  \caption{Illustration Raspberry Pi used along with the Raspberry Pi cluster }
+  \hfill
+  \begin{subfigure}[b]{0.40\textwidth}
+  \centering
+    \includegraphics[height=3.9cm]{../Figures/raspberry_pi.png}
+    \caption{Rapsberry Pi 2}
+    \label{fig:raspberry_pi}
+  \end{subfigure}
+  \caption{The Raspberry Pi 2 along with an illustration of the Raspberry Pi cluster with there IP addresses}
 \end{figure}
     
-For communication between the nodes and the laptop, a network switch with five I/O will be used. A USB hub will also be present as an alternative power supply for the cluster if needed. Furthermore, four MicroSD cards will be used to store the Raspbian Buster Lite image used to run the nodes.  
+For communication between the nodes and the laptop, a network switch with five I/O will be used. Furthermore, four MicroSD cards will be used to store the Raspbian Buster Lite image used to run the nodes. 
 
-The following chapters will cover the setup of the Raspberry Pi cluster along with testing of the distribution of data between the nodes.   
+The reason for choosing a Raspberry Pi 2 is the low cost of the unit as well as its good performance which will be put to a test in the following sections along with a covering of the setup of the Raspberry Pi cluster.   
 
 \section{Raspberry Pi setup}
+	
 The Raspbian Buster Lite operating system will be used on the nodes in order to minimize software as this is appropriate to solve the task. To flash the image to the Raspberry Pi, \textit{balenaEtcher} is used. After this operation, an empty file called \textit{ssh} is created in the boot drive of the MicroSD card in order to enable secure shell (SSH) as the communication between the Raspberry Pi and laptop. Now using \textbf{ssh pi@raspberrypi.local} from the laptop a communication is established. It is important that the default password will be changed which is \textit{raspberry}. To do this, enter \textbf{raspi\_confic} and follow the instructions. In the \textit{raspi\_config} menu, it is also possible to allocated all memory to the operating system in the \textit{advanced options} and hence expand \textit{files system}.   
 
 As a preparation to using SLURM, the hostname is changed to \textit{node01} in the files /etc/hostname and /etc/hosts using \textbf{sudo hostname node01}, \textbf{sudo nano /etc/hostname} and \textbf{sudo nano /etc/hosts} respectively. This is done for the master (node01) and the slaves with numbers going from 2-4. Nano is the default command line text editor along with Vi in the Raspberry Pi. 
@@ -61,7 +62,7 @@ Now the NFS client must be installed on the slave nodes which is done using the 
 
 Simple Linux Utility for Resource Management (SLURM) is an open source highly scalable cluster management and job scheduling system for large and small Linux clusters. It can allocate access to resources for users for a duration of time so they can perform work. Moreover, it provides framework for starting , executing and monitoring work on allocated nodes along with an arbitration contention for resources by managing a queue of pending work. Hence this software is chosen for management of the Raspberry Pi cluster. Fore more information visit \cite{SLURM}. 
 
-First the master node is going to be configured. As already mentioned, the Raspberry Pi with IP address 10.42.0.10 (Node01) will be the master. To make access to the units in our cluster easier, the line \textit{(10.42.0.X nodeX)} is added to the file /etc/hosts for every Pi connected to our cluster with the IP address going from 11-13 (X) and node from 2-4 (X). Then the SLURM controller packages will be installed using \textbf{sudo apt install slurm-wlm}. In order to initiate SLURM with default configurations, the file slurm.conf.simple is fetched to /etc/slurm-llnl using \textbf{cp /usr/share/doc/slurm-client/examples/slur} \textbf{m.conf.simple.gz .} Now unzip the file \textbf{gzip -d slurm.conf.simple.gz} and renaming it to slurm.conf. We can make changes to the configuration which fits our needs. The control machine (master) have to be specified in this file with the line \textit{ SlurmctldHost=node01(10.42.0.10)}. Now in the bottom of the file, all the nodes in the cluster have to be specified with the line \textit{(NodeName=node01 NodeAddr=10.42.0.10 CPUs=4 State=UNKNOWN)}. Again the nodes will go from 1-4 and the last byte of the IP address from 10-13. This is done so that SLURM knows all the units and the amount of resources in the cluster. SLURM runs of partitions for which nodes can be given. Two lines with a partition name along with the avalible nodes will be added as \textit{(PartitionName=mycluster1 Nodes=node[02-04] Default=YES)} and \textit{(MaxTime=INFINITE State=UP)}. The nodes given will be the compute nodes of the cluster. It is important that this file is consistent across all nodes in the cluster.    
+First the master node is going to be configured. As already mentioned, the Raspberry Pi with IP address 10.42.0.10 (Node01) will be the master. To make access to the units in our cluster easier, the line \textit{(10.42.0.X nodeY)} is added to the file /etc/hosts for every Pi connected to our cluster with the IP address going from 11-13 (X) and node from 2-4 (Y). Then the SLURM controller packages will be installed using \textbf{sudo apt install slurm-wlm}. In order to initiate SLURM with default configurations, the file slurm.conf.simple is fetched to /etc/slurm-llnl using \textbf{cp /usr/share/doc/slurm-client/examples/slur} \textbf{m.conf.simple.gz .} Now unzip the file \textbf{gzip -d slurm.conf.simple.gz} and renaming it to slurm.conf. We can make changes to the configuration which fits our needs. The control machine (master) has to be specified in this file with the line \textit{ SlurmctldHost=node01(10.42.0.10)}. Now in the bottom of the file, all the nodes in the cluster have to be specified with the line \textit{(NodeName=node01 NodeAddr=10.42.0.10 CPUs=4 State=UNKNOWN)}. Again the nodes will go from 1-4 and the last byte of the IP address from 10-13. This is done so that SLURM knows all the units and the amount of resources in the cluster. SLURM runs of partitions for which nodes can be given. Two lines with a partition name along with the avalible nodes will be added as \textit{(PartitionName=mycluster1 Nodes=node[02-04] Default=YES)} and \textit{(MaxTime=INFINITE State=UP)}. The nodes given will be the compute nodes of the cluster. It is important that this file is consistent across all nodes in the cluster.    
 
 The way to restrict access to system resources is to create and modify the cgroup.conf file which will be utilized in the directory \textit{/etc/slurm-llnl/}. This will limit the amount of resources SLURM gives to each job. The configurations can be seen to the left in Figure \ref{fig:created_files}.     
 
@@ -122,17 +123,17 @@ When using SLURM, a number of commands can be used to distribute jobs to nodes i
   \begin{subfigure}[b]{0.48\textwidth}
   \centering
     \includegraphics[height=6cm]{../Figures/runtime_counting_pumpkins1.png}
-    \caption{Runtime of an integral with 1 million steps}
+    \caption{Run time of counting pumpkins}
     \label{fig:counting_pumpkins_plot}
   \end{subfigure}
   \hfill
   \begin{subfigure}[b]{0.48\textwidth}
   \centering
     \includegraphics[height=6cm]{../Figures/barchart_pumpkin_runtime.png}
-    \caption{Runtime of an integral with 10 million steps}
+    \caption{Run time difference between laptop and 12 cores cluster }
     \label{fig:counting_pumpkins_barchart}
   \end{subfigure}
-  \caption{The performance of a compute cluster in regard to a laptop}
+  \caption{The performance of a compute cluster in regard to a laptop in counting pumpkins}
   \label{fig:counting_pumpkins}
 \end{figure}  
 
@@ -195,7 +196,7 @@ To see the performance of the cluster when the nodes are not sharing big amount 
   \label{fig:integral_runtime_50_mio_barchart}
 \end{figure}
 
-As seen Figure \ref{fig:integral_runtime_1mio}, when the amount of calculations for each node are low, a bad throughput will be achieved because of the bottleneck of communication between nodes in the cluster. However, when the amount of calculations for each node increases, the bottleneck will no longer be the communication and transportation of data between nodes, but the actual calculation of data. This will decrease the overall run time and exploit the multiple cores in the cluster more effectively. This can be seen in Figure \ref{fig:integral_runtime_50mio} and highlighted in Figure \ref{fig:extra_runtime_cluster}. Hence, when doing parallel programming, it is critical the avoid transportation of data as much as possible if this is the main reason for an increase in overall run time. 
+As seen Figure \ref{fig:integral_runtime_1mio}, when the amount of calculations for each node are low, a bad throughput will be achieved because of the bottleneck of communication between nodes in the cluster. However, when the amount of calculations for each node increases, the bottleneck will no longer be the communication and transportation of data between nodes, but the actual calculation of data. This will decrease the overall run time and exploit the multiple cores in the cluster more effectively. This can be seen in Figure \ref{fig:integral_runtime_50mio} and highlighted in Figure \ref{fig:extra_runtime_cluster}. Hence, when doing parallel programming, it is critical to avoid transportation of data as much as possible if this is the main reason for an increase in overall run time. 
 
 The results of the tests in the section are only an estimate, because background processes running on the laptop and Raspberry Pis could increase the run time by several milliseconds. However, multiple runs where made and they all yielded similar results. Thus, this gives an indication of the performance of the cluster which actually performs pretty well compared to that of a laptop. 
 
@@ -209,7 +210,7 @@ Also the shared directory could be used to update the cluster with new nodes. He
 The automation could have been effectively accomplished using packer. Packer is a tool which lets you make changes to an OS. Packer makes use of \textit{provisioners} with two types, namely \textit{shell} and \textit{inline}. Using \textit{shell}, commands could have been written in a bash script, like adding packages or editing system configurations like network configurations, host name, hosts, password and more. These changes would then be incorporated in the image after build. Having knowledge about current number of nodes in the cluster, a specific image with an individual setup for each node could have been made, which would make maintenance of the cluster scalable \cite{packer}.      
 
 \section{Conclusion}
-Tests showed that the run time of the calculations of counting pumpkins for a $23890 \times 6009$ pixel image split into 742 blocks ($500 \times500$ pixels each), which was run on a cluster with 12 cores, was approximately 110 seconds. A laptop with an Intel Core M-5Y10c CPU 0.80GHz $\times $ 4 with 8 GB RAM completed this in approximately 50 seconds. Because the nodes shared memory (the image) from the master, a bottleneck would be the transportation and communication over the bridge network. However, the calculations of an integral, $f(x) = x^2$, using the trapezoidal rule with end points $a=0$, $b=1$ and steps of 50 millions split into blocks to be used in parallel processing in the cluster, yielded a run time of only 0.2 seconds more than that of the laptop. This concludes that the  Raspberry Pi cluster with 12 compute cores performs pretty well, when transportation of large amounts of data between the nodes are not needed. 
+Tests showed that the run time of the calculations of counting pumpkins for a $23890 \times 6009$ pixel image split into 742 blocks ($500 \times500$ pixels each), which was run on a cluster with 12 cores, was approximately 110 seconds. A laptop with an Intel Core M-5Y10c CPU 0.80GHz $\times $ 4 with 8 GB RAM completed this in approximately 50 seconds. Because the nodes shared memory (the image) from the master, a bottleneck would be the transportation and communication over the network. However, the calculations of an integral, $f(x) = x^2$, using the trapezoidal rule with end points $a=0$, $b=1$ and steps of 50 millions split into blocks to be used in parallel processing in the cluster, yielded a run time of only 0.2 seconds more than that of the laptop. This concludes that the  Raspberry Pi cluster with 12 compute cores performs pretty well, when transportation of large amounts of data between the nodes are not needed. 
 
 Hence, a Raspberry Pi cluster could be a good and cheap solution if parallel programming is possible for the given task.  
 
