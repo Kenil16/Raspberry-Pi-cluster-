@@ -3,7 +3,7 @@ This project presents a way to build a Raspberry Pi cluster where parallel compu
 Four Raspberry Pi 2 will be used in the cluster. One of them will be a master and the rest slaves. A USB with a capacity of 128 GB will be used in the master for which file sharing will be utilized between the slaves. The laptop has an Intel Core M-5Y10c CPU 0.80GHz with 4 cores and 8 GB RAM.
 
 <p align="center">
-  <img src="Report/Figures/cluster_raspberrypi.png" width="750" hieght="750">
+  <img src="Report/Figures/cluster_raspberrypi.png" width="700" hieght="700">
 </p>
 
 For communication between the nodes and the laptop, a network switch with five I/O will be used. Furthermore, four MicroSD cards will be used to store the Raspbian Buster Lite image used to run the nodes. 
