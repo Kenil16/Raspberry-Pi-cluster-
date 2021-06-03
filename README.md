@@ -24,8 +24,7 @@ between the slaves. The laptop has an Intel Core M-5Y10c CPU 0.80GHz × 4 with 8
 For communication between the nodes and the laptop, a network switch with five I/O will be used. Furthermore, four
 MicroSD cards will be used to store the Raspbian Buster Lite image used to run the nodes.
 
-The reason for choosing a Raspberry Pi 2 is the low cost of the unit as well as its good performance which will be put to
-a test in the following sections along with a covering of the setup of the Raspberry Pi cluster.
+The reason for choosing a Raspberry Pi 2 is the low cost of the unit as well as its good performance.
 
 ## _Object segmentation of an orthomosaic for calculating pumpkins_
 
